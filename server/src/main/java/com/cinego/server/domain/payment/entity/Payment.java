@@ -62,6 +62,10 @@ public class Payment extends BaseEntity {
     private String refundReason;
 
     @Column(name = "metadata", columnDefinition = "jsonb")
+    @org.hibernate.annotations.ColumnTransformer(
+        read = "metadata::text",
+        write = "CAST(? AS jsonb)"
+    )
     private String metadata;
 
     public enum PaymentMethod {
