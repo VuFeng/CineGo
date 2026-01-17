@@ -1,5 +1,6 @@
 package com.cinego.server.common.security;
 
+import com.cinego.server.domain.user.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,8 +21,14 @@ public class UserPrincipal implements UserDetails {
     private String role;
     private Boolean isActive;
 
-    public static UserPrincipal create(UUID id, String email, String password, String role, Boolean isActive) {
-        return new UserPrincipal(id, email, password, role, isActive);
+    public static UserPrincipal create(User user) {
+        return new UserPrincipal(
+            user.getId(),
+            user.getEmail(),
+            user.getPasswordHash(),
+            user.getRole().name(),
+            user.getIsActive()
+        );
     }
 
     @Override

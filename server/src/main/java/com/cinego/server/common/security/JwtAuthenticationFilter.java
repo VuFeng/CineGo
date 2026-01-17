@@ -42,13 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         .orElse(null);
 
                 if (user != null && user.getIsActive()) {
-                    UserPrincipal userPrincipal = UserPrincipal.create(
-                            user.getId(),
-                            user.getEmail(),
-                            user.getPasswordHash(),
-                            user.getRole().name(),
-                            user.getIsActive()
-                    );
+                    UserPrincipal userPrincipal = UserPrincipal.create(user);
 
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             userPrincipal,
