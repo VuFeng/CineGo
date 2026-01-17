@@ -56,5 +56,12 @@ public class CinemaController {
         CinemaDTO cinema = cinemaService.updateCinema(id, request);
         return ResponseEntity.ok(ApiResponse.success("Cập nhật rạp thành công", cinema));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteCinema(
+            @PathVariable @NotNull(message = "Cinema ID không được để trống") UUID id) {
+        cinemaService.deleteCinema(id);
+        return ResponseEntity.ok(ApiResponse.success("Xóa rạp thành công", null));
+    }
 }
 

@@ -1,6 +1,7 @@
 package com.cinego.server.domain.cinema.service;
 
 import com.cinego.server.common.dto.PageResponse;
+import com.cinego.server.common.exception.ConflictException;
 import com.cinego.server.common.exception.ResourceNotFoundException;
 import com.cinego.server.common.util.PageUtil;
 import com.cinego.server.domain.cinema.dto.CinemaDTO;
@@ -112,6 +113,22 @@ public class CinemaService {
 
         Cinema updated = cinemaRepository.save(cinema);
         return cinemaMapper.toDTO(updated);
+    }
+
+    @Transactional
+    public void deleteCinema(UUID id) {
+        log.info("Deleting cinema with id: {}", id);
+        Cinema cinema = cinemaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cinema", "id", id));
+
+        // Kiểm tra xem có room nào không
+        if (!cinema.getRooms().isEmpty()) {
+            throw new ConflictException("Không thể xóa rạp đang có phòng chiếu");
+        }
+
+        cinemaRepository.delete(cinema);
+        cinemaRepository.flush();
+        log.info("Cinema deleted successfully with id: {}", id);
     }
 }
 
