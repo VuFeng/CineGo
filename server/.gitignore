@@ -36,3 +36,7 @@ build/
 ### Application Configuration ###
 # Ignore application.yml to prevent exposing sensitive data
 /src/main/resources/application.yml
+
+### Docker ###
+.env
+.env.local
