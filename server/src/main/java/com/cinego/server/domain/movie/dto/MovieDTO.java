@@ -7,9 +7,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.cinego.server.domain.genre.dto.GenreDTO;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -32,6 +35,7 @@ public class MovieDTO {
     private MovieStatus status;
     private BigDecimal imdbRating;
     private String country;
+    private List<GenreDTO> genres; // Danh sách genres của phim
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

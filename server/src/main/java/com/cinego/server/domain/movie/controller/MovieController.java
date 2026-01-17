@@ -15,7 +15,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.UUID;
+
+import com.cinego.server.domain.movie.entity.Movie.MovieStatus;
 
 @RestController
 @RequestMapping("/movies")
@@ -33,6 +36,16 @@ public class MovieController {
                 .body(ApiResponse.success("Tạo phim thành công", movie));
     }
 
+    @GetMapping
+    public ResponseEntity<ApiResponse<PageResponse<MovieDTO>>> getAllMovies(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
+        PageResponse<MovieDTO> result = movieService.getAllMovies(page, size, sortBy, sortDirection);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<MovieDTO>> getMovieById(
             @PathVariable @NotNull(message = "Movie ID không được để trống") UUID id) {
@@ -40,10 +53,23 @@ public class MovieController {
         return ResponseEntity.ok(ApiResponse.success(movie));
     }
 
-    @PostMapping("/search")
+    @GetMapping("/search")
     public ResponseEntity<ApiResponse<PageResponse<MovieDTO>>> searchMovies(
-            @Valid @RequestBody MovieSearchRequest request) {
-        PageResponse<MovieDTO> result = movieService.searchMovies(request);
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) MovieStatus status,
+            @RequestParam(required = false) LocalDate fromDate,
+            @RequestParam(required = false) LocalDate toDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
+        MovieSearchRequest searchRequest = MovieSearchRequest.builder()
+                .keyword(keyword)
+                .status(status)
+                .fromDate(fromDate)
+                .toDate(toDate)
+                .build();
+        PageResponse<MovieDTO> result = movieService.searchMovies(searchRequest, page, size, sortBy, sortDirection);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 

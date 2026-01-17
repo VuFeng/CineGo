@@ -12,6 +12,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -51,5 +53,7 @@ public class UpdateMovieRequest {
     private BigDecimal imdbRating;
 
     private String country;
+
+    private List<UUID> genreIds; // Danh sách genre IDs (null = không thay đổi, [] = xóa hết)
 }
 
