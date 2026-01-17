@@ -34,4 +34,4 @@ build/
 
 ### Application Configuration ###
 # Ignore application.yml to prevent exposing sensitive data
-server/src/main/resources/application.yml
+/src/main/resources/application.yml
