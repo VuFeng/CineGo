@@ -1,5 +1,6 @@
 package com.cinego.server.domain.room.service;
 
+import com.cinego.server.common.exception.BadRequestException;
 import com.cinego.server.common.exception.ResourceNotFoundException;
 import com.cinego.server.domain.cinema.entity.Cinema;
 import com.cinego.server.domain.cinema.repository.CinemaRepository;
@@ -120,6 +121,22 @@ public class RoomService {
 
         Room updated = roomRepository.save(room);
         return roomMapper.toDTO(updated);
+    }
+
+    @Transactional
+    public void deleteRoom(UUID id) {
+        log.info("Deleting room with id: {}", id);
+        Room room = roomRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Room", "id", id));
+
+        // Kiểm tra xem có showtime nào không
+        if (!room.getShowtimes().isEmpty()) {
+            throw new BadRequestException("Không thể xóa phòng chiếu đã có lịch chiếu");
+        }
+
+        roomRepository.delete(room);
+        roomRepository.flush();
+        log.info("Room deleted successfully with id: {}", id);
     }
 }
 

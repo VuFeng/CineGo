@@ -64,5 +64,12 @@ public class RoomController {
         RoomDTO room = roomService.updateRoom(id, request);
         return ResponseEntity.ok(ApiResponse.success("Cập nhật phòng thành công", room));
     }
+
+    @DeleteMapping("/rooms/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteRoom(
+            @PathVariable @NotNull(message = "Room ID không được để trống") UUID id) {
+        roomService.deleteRoom(id);
+        return ResponseEntity.ok(ApiResponse.success("Xóa phòng thành công", null));
+    }
 }
 
