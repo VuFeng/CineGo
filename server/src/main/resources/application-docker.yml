@@ -1,0 +1,87 @@
+spring:
+  application:
+    name: cinego-server
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      data-source-properties:
+        prepareThreshold: 0 # Tắt prepared statements để tương thích với Supabase pooler
+
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 20
+          use_server_prepared_statement: false # Tắt prepared statements để tương thích với Supabase pooler
+        order_inserts: true
+        order_updates: true
+        connection:
+          provider_disables_autocommit: false # Supabase pooler yêu cầu autocommit enabled
+
+  flyway:
+    enabled: ${SPRING_FLYWAY_ENABLED:false}
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: Asia/Ho_Chi_Minh
+
+  web:
+    resources:
+      add-mappings: false
+
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+logging:
+  level:
+    root: INFO
+    com.cinego.server: INFO
+    org.springframework.web: WARN
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:your-secret-key-change-in-production-min-256-bits}
+    expiration: 86400000 # 24 hours
+    refresh-expiration: 604800000 # 7 days
+
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:5173
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - PATCH
+      - OPTIONS
+    allowed-headers: "*"
+    allow-credentials: true
