@@ -9,8 +9,12 @@ import com.cinego.server.domain.room.dto.UpdateRoomRequest;
 import com.cinego.server.domain.room.entity.Room;
 import com.cinego.server.domain.room.mapper.RoomMapper;
 import com.cinego.server.domain.room.repository.RoomRepository;
+import com.cinego.server.common.dto.PageResponse;
+import com.cinego.server.common.util.PageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,6 +72,26 @@ public class RoomService {
         return rooms.stream()
                 .map(roomMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    public PageResponse<RoomDTO> getAllRooms(int page, int size, String sortBy, String sortDirection) {
+        log.info("Getting all rooms with pagination");
+        Pageable pageable = PageUtil.createPageable(page, size, sortBy, sortDirection);
+        Page<Room> roomPage = roomRepository.findAll(pageable);
+        
+        List<RoomDTO> content = roomPage.getContent().stream()
+                .map(roomMapper::toDTO)
+                .collect(Collectors.toList());
+        
+        return PageResponse.<RoomDTO>builder()
+                .content(content)
+                .page(roomPage.getNumber())
+                .size(roomPage.getSize())
+                .totalElements(roomPage.getTotalElements())
+                .totalPages(roomPage.getTotalPages())
+                .first(roomPage.isFirst())
+                .last(roomPage.isLast())
+                .build();
     }
 
     @Transactional

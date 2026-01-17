@@ -1,6 +1,7 @@
 package com.cinego.server.domain.seat.controller;
 
 import com.cinego.server.common.dto.ApiResponse;
+import com.cinego.server.common.dto.PageResponse;
 import com.cinego.server.domain.seat.dto.BulkCreateSeatsRequest;
 import com.cinego.server.domain.seat.dto.CreateSeatRequest;
 import com.cinego.server.domain.seat.dto.SeatDTO;
@@ -39,6 +40,16 @@ public class SeatController {
         List<SeatDTO> seats = seatService.bulkCreateSeats(roomId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Tạo nhiều ghế thành công", seats));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<PageResponse<SeatDTO>>> getAllSeats(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
+        PageResponse<SeatDTO> result = seatService.getAllSeats(page, size, sortBy, sortDirection);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/rooms/{roomId}/seats")

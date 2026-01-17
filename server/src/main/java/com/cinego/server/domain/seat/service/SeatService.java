@@ -1,7 +1,9 @@
 package com.cinego.server.domain.seat.service;
 
+import com.cinego.server.common.dto.PageResponse;
 import com.cinego.server.common.exception.ConflictException;
 import com.cinego.server.common.exception.ResourceNotFoundException;
+import com.cinego.server.common.util.PageUtil;
 import com.cinego.server.domain.room.entity.Room;
 import com.cinego.server.domain.room.repository.RoomRepository;
 import com.cinego.server.domain.seat.dto.BulkCreateSeatsRequest;
@@ -12,6 +14,8 @@ import com.cinego.server.domain.seat.mapper.SeatMapper;
 import com.cinego.server.domain.seat.repository.SeatRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -140,6 +144,14 @@ public class SeatService {
 
         Seat updated = seatRepository.save(seat);
         return seatMapper.toDTO(updated);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<SeatDTO> getAllSeats(int page, int size, String sortBy, String sortDirection) {
+        log.info("Getting all seats with pagination - page: {}, size: {}", page, size);
+        Pageable pageable = PageUtil.createPageable(page, size, sortBy, sortDirection);
+        Page<Seat> seatPage = seatRepository.findAll(pageable);
+        return PageUtil.toPageResponse(seatPage.map(seatMapper::toDTO));
     }
 }
 

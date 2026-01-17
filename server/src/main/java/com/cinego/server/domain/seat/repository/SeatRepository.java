@@ -1,6 +1,9 @@
 package com.cinego.server.domain.seat.repository;
 
 import com.cinego.server.domain.seat.entity.Seat;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,6 +14,10 @@ import java.util.UUID;
 
 @Repository
 public interface SeatRepository extends JpaRepository<Seat, UUID> {
+
+    @EntityGraph(attributePaths = {"room"})
+    @Override
+    Page<Seat> findAll(Pageable pageable);
 
     @Query("SELECT s FROM Seat s WHERE s.room.id = :roomId")
     List<Seat> findByRoomId(@Param("roomId") UUID roomId);

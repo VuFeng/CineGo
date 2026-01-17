@@ -1,6 +1,7 @@
 package com.cinego.server.domain.room.controller;
 
 import com.cinego.server.common.dto.ApiResponse;
+import com.cinego.server.common.dto.PageResponse;
 import com.cinego.server.domain.room.dto.CreateRoomRequest;
 import com.cinego.server.domain.room.dto.RoomDTO;
 import com.cinego.server.domain.room.dto.UpdateRoomRequest;
@@ -30,6 +31,16 @@ public class RoomController {
         RoomDTO room = roomService.createRoom(cinemaId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Tạo phòng thành công", room));
+    }
+
+    @GetMapping("/rooms")
+    public ResponseEntity<ApiResponse<PageResponse<RoomDTO>>> getAllRooms(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
+        PageResponse<RoomDTO> result = roomService.getAllRooms(page, size, sortBy, sortDirection);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/cinemas/{cinemaId}/rooms")
