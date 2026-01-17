@@ -34,6 +34,9 @@ public class User extends BaseEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Notification> notifications = new ArrayList<>();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RefreshToken> refreshTokens = new ArrayList<>();
+
     @Column(nullable = false, unique = true)
     private String email;
 

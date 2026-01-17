@@ -1,6 +1,7 @@
 package com.cinego.server.domain.user.controller;
 
 import com.cinego.server.common.dto.ApiResponse;
+import com.cinego.server.common.dto.PageResponse;
 import com.cinego.server.common.exception.UnauthorizedException;
 import com.cinego.server.common.util.SecurityUtil;
 import com.cinego.server.domain.user.dto.*;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.UUID;
 
@@ -31,8 +33,12 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
-        LoginResponse response = userService.login(request);
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest) {
+        String deviceInfo = httpRequest.getHeader("User-Agent");
+        String ipAddress = getClientIpAddress(httpRequest);
+        LoginResponse response = userService.login(request, deviceInfo, ipAddress);
         return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công", response));
     }
 
@@ -47,6 +53,16 @@ public class UserController {
             @PathVariable @NotNull(message = "User ID không được để trống") UUID id) {
         UserDTO user = userService.getUserById(id);
         return ResponseEntity.ok(ApiResponse.success(user));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<PageResponse<UserDTO>>> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
+        PageResponse<UserDTO> result = userService.getAllUsers(page, size, sortBy, sortDirection);
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/me")
@@ -72,5 +88,38 @@ public class UserController {
             @PathVariable @NotNull(message = "User ID không được để trống") UUID id) {
         userService.deleteUser(id);
         return ResponseEntity.ok(ApiResponse.success("Xóa tài khoản thành công", null));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        userService.logout(request.getRefreshToken());
+        return ResponseEntity.ok(ApiResponse.success("Đăng xuất thành công", null));
+    }
+
+    @PostMapping("/logout-all")
+    public ResponseEntity<ApiResponse<Void>> logoutAll() {
+        UUID userId = SecurityUtil.getCurrentUserId();
+        if (userId == null) {
+            throw new UnauthorizedException("Bạn cần đăng nhập để truy cập endpoint này");
+        }
+        userService.logoutAll(userId);
+        return ResponseEntity.ok(ApiResponse.success("Đăng xuất khỏi tất cả thiết bị thành công", null));
+    }
+
+    /**
+     * Lấy IP address của client từ HttpServletRequest
+     */
+    private String getClientIpAddress(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
+            return xRealIp;
+        }
+        
+        return request.getRemoteAddr();
     }
 }

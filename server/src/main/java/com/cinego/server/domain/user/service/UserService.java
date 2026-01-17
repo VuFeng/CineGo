@@ -1,15 +1,19 @@
 package com.cinego.server.domain.user.service;
 
+import com.cinego.server.common.dto.PageResponse;
 import com.cinego.server.common.exception.BadRequestException;
 import com.cinego.server.common.exception.ConflictException;
 import com.cinego.server.common.exception.ResourceNotFoundException;
 import com.cinego.server.common.security.JwtUtil;
+import com.cinego.server.common.util.PageUtil;
 import com.cinego.server.domain.user.dto.*;
 import com.cinego.server.domain.user.entity.User;
 import com.cinego.server.domain.user.mapper.UserMapper;
 import com.cinego.server.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +31,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
 
     public UserDTO createUser(CreateUserRequest request) {
         log.info("Creating user with email: {}", request.getEmail());
@@ -134,7 +139,7 @@ public class UserService {
         log.info("User deactivated successfully with id: {}", id);
     }
 
-    public LoginResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request, String deviceInfo, String ipAddress) {
         log.info("Login attempt for: {}", request.getEmailOrPhone());
 
         // Tìm user theo email hoặc phone
@@ -158,13 +163,17 @@ public class UserService {
         userRepository.save(user);
         userRepository.flush(); // Flush để đảm bảo entity được persist
 
-        // Generate access token và refresh token
+        // Generate access token
         String accessToken = jwtUtil.generateToken(
                 user.getId(),
                 user.getEmail(),
                 user.getRole().name()
         );
-        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
+
+        // Tạo và lưu refresh token vào database
+        com.cinego.server.domain.user.entity.RefreshToken refreshTokenEntity = 
+                refreshTokenService.createRefreshToken(user, deviceInfo, ipAddress);
+        String refreshToken = refreshTokenEntity.getToken();
 
         UserDTO userDTO = userMapper.toDTO(user);
         return LoginResponse.builder()
@@ -177,30 +186,24 @@ public class UserService {
     public LoginResponse refreshToken(String refreshToken) {
         log.info("Refreshing token");
 
-        // Validate refresh token
-        if (!jwtUtil.validateRefreshToken(refreshToken)) {
-            throw new BadRequestException("Refresh token không hợp lệ hoặc đã hết hạn");
-        }
+        // Validate refresh token từ database
+        com.cinego.server.domain.user.entity.RefreshToken refreshTokenEntity = 
+                refreshTokenService.validateRefreshToken(refreshToken);
 
-        // Lấy userId từ refresh token
-        UUID userId = jwtUtil.getUserIdFromToken(refreshToken);
+        User user = refreshTokenEntity.getUser();
 
-        // Load user từ database
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-
-        // Kiểm tra tài khoản có active không
-        if (!user.getIsActive()) {
-            throw new BadRequestException("Tài khoản đã bị khóa");
-        }
-
-        // Generate new access token và refresh token
+        // Generate new access token
         String newAccessToken = jwtUtil.generateToken(
                 user.getId(),
                 user.getEmail(),
                 user.getRole().name()
         );
-        String newRefreshToken = jwtUtil.generateRefreshToken(user.getId());
+
+        // Token rotation: Xóa token cũ và tạo token mới
+        refreshTokenService.deleteOldRefreshToken(refreshToken);
+        com.cinego.server.domain.user.entity.RefreshToken newRefreshTokenEntity = 
+                refreshTokenService.createRefreshToken(user, refreshTokenEntity.getDeviceInfo(), refreshTokenEntity.getIpAddress());
+        String newRefreshToken = newRefreshTokenEntity.getToken();
 
         UserDTO userDTO = userMapper.toDTO(user);
         return LoginResponse.builder()
@@ -210,8 +213,32 @@ public class UserService {
                 .build();
     }
 
+    /**
+     * Logout - revoke refresh token
+     */
+    public void logout(String refreshToken) {
+        log.info("Logging out user");
+        refreshTokenService.revokeRefreshToken(refreshToken);
+    }
+
+    /**
+     * Logout từ tất cả devices - revoke tất cả refresh tokens của user
+     */
+    public void logoutAll(UUID userId) {
+        log.info("Logging out user from all devices: {}", userId);
+        refreshTokenService.revokeAllUserTokens(userId);
+    }
+
     @Transactional(readOnly = true)
     public UserDTO getCurrentUser(UUID userId) {
         return getUserById(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<UserDTO> getAllUsers(int page, int size, String sortBy, String sortDirection) {
+        log.info("Getting all users with pagination - page: {}, size: {}", page, size);
+        Pageable pageable = PageUtil.createPageable(page, size, sortBy, sortDirection);
+        Page<User> userPage = userRepository.findAll(pageable);
+        return PageUtil.toPageResponse(userPage.map(userMapper::toDTO));
     }
 }
